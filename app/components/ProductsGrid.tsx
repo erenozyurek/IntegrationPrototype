@@ -78,6 +78,7 @@ export default function ProductsGrid() {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [isLoadingVariants, setIsLoadingVariants] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [isMainProductSelected, setIsMainProductSelected] = useState(true); // Ana ürün mü seçili?
   const [editForm, setEditForm] = useState<EditFormData>({
     id: '',
     variant_id: null,
@@ -137,6 +138,7 @@ export default function ProductsGrid() {
       stock_quantity: product.stock || 0,
       status: product.status,
     });
+    setIsMainProductSelected(true); // Başlangıçta ana ürün seçili
     setIsEditModalOpen(true);
     
     // Load variants
@@ -168,6 +170,7 @@ export default function ProductsGrid() {
     setEditingProduct(null);
     setVariants([]);
     setSelectedVariant(null);
+    setIsMainProductSelected(true);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -178,7 +181,25 @@ export default function ProductsGrid() {
     }));
   };
 
+  const handleMainProductSelect = () => {
+    setIsMainProductSelected(true);
+    setSelectedVariant(null);
+    // Restore main product data to form
+    if (editingProduct) {
+      setEditForm(prev => ({
+        ...prev,
+        variant_id: null,
+        title: editingProduct.title,
+        description: editingProduct.description || '',
+        base_cost_price: editingProduct.base_cost_price,
+        stock_quantity: editingProduct.stock || 0,
+        status: editingProduct.status,
+      }));
+    }
+  };
+
   const handleVariantSelect = (variant: Variant) => {
+    setIsMainProductSelected(false);
     setSelectedVariant(variant);
     // Update form with selected variant data
     setEditForm(prev => ({
@@ -551,23 +572,67 @@ export default function ProductsGrid() {
                   </div>
                 )}
 
-                {/* Variant Selection */}
-                {variants.length > 0 && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                      </svg>
-                      Varyant Seçimi ({variants.length} adet)
-                    </label>
-                    
-                    {isLoadingVariants ? (
-                      <div className="flex items-center justify-center py-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {variants.map((variant) => (
+                {/* Main Product and Variant Selection */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    Düzenlenecek Öğeyi Seçin
+                  </label>
+                  
+                  {isLoadingVariants ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Main Product Card */}
+                      <button
+                        type="button"
+                        onClick={handleMainProductSelect}
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          isMainProductSelected
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 hover:border-green-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded">
+                              <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold text-green-700">ANA ÜRÜN</span>
+                            </div>
+                            {isMainProductSelected && (
+                              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="font-semibold text-gray-900 mb-2">
+                            {editingProduct?.title}
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Kategori:</span>
+                            <span className="font-medium text-gray-900">{editingProduct?.category}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Marka:</span>
+                            <span className="font-medium text-gray-900">{editingProduct?.brand || '-'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Toplam Varyant:</span>
+                            <span className="font-semibold text-green-600">{variants.length} adet</span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Variant Cards */}
+                      {variants.map((variant) => (
                           <button
                             key={variant.id}
                             type="button"
@@ -613,30 +678,31 @@ export default function ProductsGrid() {
                       </div>
                     )}
                   </div>
-                )}
 
                 {/* Form Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Product Name */}
-                  <div className="md:col-span-2">
-                    <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 mb-2">
-                      Ürün Adı <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="edit-title"
-                      name="title"
-                      value={editForm.title}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
-                    />
-                  </div>
+                  {/* Product Name - Only for Main Product */}
+                  {isMainProductSelected && (
+                    <div className="md:col-span-2">
+                      <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 mb-2">
+                        Ürün Adı <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="edit-title"
+                        name="title"
+                        value={editForm.title}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
+                      />
+                    </div>
+                  )}
 
-                  {/* Price */}
+                  {/* Price - Always visible */}
                   <div>
                     <label htmlFor="edit-price" className="block text-sm font-medium text-gray-700 mb-2">
-                      Fiyat (₺) <span className="text-red-500">*</span>
+                      {isMainProductSelected ? 'Temel Fiyat' : 'Varyant Fiyatı'} (₺) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -651,10 +717,10 @@ export default function ProductsGrid() {
                     />
                   </div>
 
-                  {/* Stock */}
+                  {/* Stock - Always visible */}
                   <div>
                     <label htmlFor="edit-stock" className="block text-sm font-medium text-gray-700 mb-2">
-                      Stok Adedi <span className="text-red-500">*</span>
+                      {isMainProductSelected ? 'Temel Stok' : 'Varyant Stok'} Adedi <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -668,40 +734,66 @@ export default function ProductsGrid() {
                     />
                   </div>
 
-                  {/* Status */}
-                  <div className="md:col-span-2">
-                    <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700 mb-2">
-                      Durum <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="edit-status"
-                      name="status"
-                      value={editForm.status}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none bg-white"
-                    >
-                      <option value="active">Aktif</option>
-                      <option value="draft">Taslak</option>
-                      <option value="inactive">Pasif</option>
-                    </select>
-                  </div>
+                  {/* Status - Only for Main Product */}
+                  {isMainProductSelected && (
+                    <div className="md:col-span-2">
+                      <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700 mb-2">
+                        Durum <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="edit-status"
+                        name="status"
+                        value={editForm.status}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none bg-white"
+                      >
+                        <option value="active">Aktif</option>
+                        <option value="draft">Taslak</option>
+                        <option value="inactive">Pasif</option>
+                      </select>
+                    </div>
+                  )}
 
-                  {/* Description */}
-                  <div className="md:col-span-2">
-                    <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
-                      Açıklama
-                    </label>
-                    <textarea
-                      id="edit-description"
-                      name="description"
-                      value={editForm.description}
-                      onChange={handleInputChange}
-                      rows={4}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none resize-none"
-                      placeholder="Ürün hakkında detaylı bilgi..."
-                    />
-                  </div>
+                  {/* Description - Only for Main Product */}
+                  {isMainProductSelected && (
+                    <div className="md:col-span-2">
+                      <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
+                        Açıklama
+                      </label>
+                      <textarea
+                        id="edit-description"
+                        name="description"
+                        value={editForm.description}
+                        onChange={handleInputChange}
+                        rows={4}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none resize-none"
+                        placeholder="Ürün hakkında detaylı bilgi..."
+                      />
+                    </div>
+                  )}
+
+                  {/* Variant Info Display - Only when variant selected */}
+                  {!isMainProductSelected && selectedVariant && (
+                    <div className="md:col-span-2 bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                      <h4 className="text-sm font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Seçili Varyant Bilgileri
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-indigo-600">SKU:</span>
+                          <span className="ml-2 font-mono font-medium text-indigo-900">{selectedVariant.master_sku}</span>
+                        </div>
+                        <div>
+                          <span className="text-indigo-600">Barkod:</span>
+                          <span className="ml-2 font-medium text-indigo-900">{selectedVariant.barcode || '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Product Info Display - Read Only */}
@@ -734,37 +826,34 @@ export default function ProductsGrid() {
 
                 {/* Action Buttons */}
                 <div className="space-y-3 pt-4 border-t border-gray-200">
-                  {/* Variant Save Button - Only show if variant is selected */}
-                  {selectedVariant && (
-                    <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-indigo-900">
-                          Seçili Varyant: <span className="font-mono">{selectedVariant.master_sku}</span>
-                        </p>
-                        <p className="text-xs text-indigo-600 mt-1">
-                          Bu varyantın fiyat ve stok bilgilerini güncelleyebilirsiniz
-                        </p>
-                      </div>
+                  {/* Save Buttons */}
+                  <div className="flex items-center gap-3">
+                    {isMainProductSelected ? (
+                      // Main Product Save Button
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-lg shadow-green-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        {isSaving ? 'Kaydediliyor...' : 'Ana Ürünü Kaydet'}
+                      </button>
+                    ) : (
+                      // Variant Save Button
                       <button
                         type="button"
                         onClick={handleSaveVariant}
-                        disabled={isSaving}
-                        className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        disabled={isSaving || !selectedVariant}
+                        className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-lg shadow-indigo-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
                         {isSaving ? 'Kaydediliyor...' : 'Varyantı Kaydet'}
                       </button>
-                    </div>
-                  )}
-
-                  {/* Product Save Buttons */}
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-lg shadow-green-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSaving ? 'Kaydediliyor...' : 'Ürün Bilgilerini Kaydet'}
-                    </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleCloseModal}
@@ -773,6 +862,19 @@ export default function ProductsGrid() {
                     >
                       İptal
                     </button>
+                  </div>
+
+                  {/* Info Text */}
+                  <div className={`text-center text-xs p-2 rounded-lg ${isMainProductSelected ? 'bg-green-50 text-green-700' : 'bg-indigo-50 text-indigo-700'}`}>
+                    {isMainProductSelected ? (
+                      <>
+                        <span className="font-semibold">Ana Ürün Modu:</span> Ürün adı, açıklama ve durum bilgilerini düzenleyebilirsiniz.
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold">Varyant Modu:</span> Seçili varyantın fiyat ve stok bilgilerini düzenleyebilirsiniz.
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
