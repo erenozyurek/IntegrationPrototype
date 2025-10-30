@@ -38,14 +38,33 @@ export async function GET() {
       throw error;
     }
 
+    console.log('🔍 API - Ham ürün verisi (ilk ürün):', JSON.stringify(products?.[0], null, 2));
+    console.log('🔍 API - İlk ürünün varyantları:', products?.[0]?.variants);
+    console.log('🔍 API - İlk varyantın resimleri:', products?.[0]?.variants?.[0]?.images);
+
     // Transform data for frontend
-    const transformedProducts = products?.map(product => {
+    const transformedProducts = await Promise.all(products?.map(async (product) => {
       // İlk varyantı al (ana varyant olarak kullan)
       const primaryVariant = product.variants?.[0];
       
-      // İlk görseli al veya placeholder kullan
-      const primaryImage = primaryVariant?.images?.find((img: any) => img.is_primary) 
+      // Resimleri product_id ile direkt çek (variant üzerinden gelmiyorsa)
+      let primaryImage = primaryVariant?.images?.find((img: any) => img.is_primary) 
         || primaryVariant?.images?.[0];
+      
+      // Eğer variant'tan resim gelmemişse, doğrudan product_id ile çek
+      if (!primaryImage) {
+        const { data: images } = await supabase
+          .from('product_images')
+          .select('id, url, is_primary, sort_order')
+          .eq('product_id', product.id)
+          .order('sort_order', { ascending: true })
+          .limit(1);
+        
+        if (images && images.length > 0) {
+          primaryImage = images[0];
+        }
+        console.log(`🖼️ Product ${product.id} için direkt sorgu sonucu:`, primaryImage);
+      }
 
       return {
         id: product.id,
@@ -78,7 +97,7 @@ export async function GET() {
         total_variants: product.variants?.length || 0,
         total_stock: product.variants?.reduce((sum: number, v: any) => sum + (v.stock_quantity || 0), 0) || 0,
       };
-    }) || [];
+    }) || []);
 
     // İstatistikler
     const stats = {

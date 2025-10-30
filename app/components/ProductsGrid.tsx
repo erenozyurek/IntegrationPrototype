@@ -101,6 +101,9 @@ export default function ProductsGrid() {
       const data = await response.json();
 
       if (data.success) {
+        console.log('📦 Ürünler yüklendi:', data.products.length);
+        console.log('🖼️ İlk ürün resmi:', data.products[0]?.image_url);
+        console.log('📋 İlk ürün detayı:', data.products[0]);
         setProducts(data.products);
         setStats(data.stats);
       } else {
@@ -187,6 +190,22 @@ export default function ProductsGrid() {
       base_cost_price: variant.cost_price,
       stock_quantity: variant.stock_quantity,
     }));
+  };
+
+  const handleMainProductSelect = () => {
+    setSelectedVariant(null);
+    // Reset form to main product data
+    if (editingProduct) {
+      setEditForm({
+        id: editingProduct.id,
+        variant_id: null,
+        title: editingProduct.title,
+        description: editingProduct.description || '',
+        base_cost_price: editingProduct.base_cost_price,
+        stock_quantity: editingProduct.stock || 0,
+        status: editingProduct.status,
+      });
+    }
   };
 
   const handleSaveVariant = async () => {
@@ -551,6 +570,64 @@ export default function ProductsGrid() {
                   </div>
                 )}
 
+                {/* Main Product Card */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    Ana Ürün
+                  </label>
+                  
+                  <button
+                    type="button"
+                    onClick={handleMainProductSelect}
+                    className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                      !selectedVariant
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-green-300 bg-white hover:border-green-400 hover:bg-green-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono bg-white px-2 py-1 rounded border border-green-200">
+                          {editingProduct.master_sku}
+                        </span>
+                        <span className="text-xs font-semibold text-green-700 bg-green-200 px-2 py-1 rounded">
+                          ANA ÜRÜN
+                        </span>
+                        {!selectedVariant && (
+                          <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-700 font-medium">Temel Fiyat:</span>
+                        <span className="font-semibold text-gray-900">{editingProduct.base_cost_price} ₺</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700 font-medium">Toplam Stok:</span>
+                        <span className={`font-semibold ${editingProduct.total_stock > 10 ? 'text-green-600' : editingProduct.total_stock > 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                          {editingProduct.total_stock}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700 font-medium">Varyant Sayısı:</span>
+                        <span className="text-gray-900 font-semibold">{editingProduct.total_variants} adet</span>
+                      </div>
+                      {editingProduct.barcode && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-700 font-medium">Barkod:</span>
+                          <span className="text-gray-900 font-mono text-xs">{editingProduct.barcode}</span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </div>
+
                 {/* Variant Selection */}
                 {variants.length > 0 && (
                   <div className="mb-6">
@@ -558,7 +635,7 @@ export default function ProductsGrid() {
                       <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                       </svg>
-                      Varyant Seçimi ({variants.length} adet)
+                      Varyantlar ({variants.length} adet)
                     </label>
                     
                     {isLoadingVariants ? (
@@ -734,6 +811,20 @@ export default function ProductsGrid() {
 
                 {/* Action Buttons */}
                 <div className="space-y-3 pt-4 border-t border-gray-200">
+                  {/* Main Product Info - Only show if main product is selected */}
+                  {!selectedVariant && (
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-900">
+                          Seçili: <span className="font-semibold">Ana Ürün</span> <span className="font-mono">({editingProduct.master_sku})</span>
+                        </p>
+                        <p className="text-xs text-green-600 mt-1">
+                          Ana ürünün temel bilgilerini güncelleyebilirsiniz
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Variant Save Button - Only show if variant is selected */}
                   {selectedVariant && (
                     <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">

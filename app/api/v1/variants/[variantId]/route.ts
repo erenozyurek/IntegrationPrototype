@@ -3,10 +3,10 @@ import { supabase } from '@/lib/supabaseClient';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { variantId: string } }
+  { params }: { params: Promise<{ variantId: string }> }
 ) {
   try {
-    const variantId = params.variantId;
+    const { variantId } = await params;
     const body = await request.json();
     const { cost_price, stock_quantity, status, barcode } = body;
 

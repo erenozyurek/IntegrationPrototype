@@ -166,6 +166,75 @@ export default function AddProductForm() {
       }
 
       console.log('✅ ÜRÜN BAŞARIYLA KAYDEDİLDİ:', result);
+      console.log('🖼️ imageFiles.length:', imageFiles.length);
+      console.log('🆔 result.data?.product?.id:', result.data?.product?.id);
+      
+      // Resim yükleme (eğer resim varsa)
+      if (imageFiles.length > 0 && result.data?.product?.id) {
+        console.log('📸 Resimler yükleniyor...');
+        
+        try {
+          const formData = new FormData();
+          imageFiles.forEach(file => {
+            formData.append('files', file);
+          });
+
+          const uploadResponse = await fetch('/api/v1/upload/image', {
+            method: 'PUT', // Çoklu yükleme için PUT
+            body: formData,
+          });
+
+          const uploadResult = await uploadResponse.json();
+
+          if (uploadResult.success && uploadResult.files && uploadResult.files.length > 0) {
+            console.log('✅ Resimler yüklendi:', uploadResult.files);
+            
+            // Resimleri product_images tablosuna kaydet
+            const productId = result.data.product.id;
+            const variantId = result.data.variants?.[0]?.id; // İlk varyant
+            
+            console.log('📦 Product ID:', productId);
+            console.log('🏷️ Variant ID:', variantId);
+            console.log('📸 Toplam resim:', uploadResult.files.length);
+            
+            for (let i = 0; i < uploadResult.files.length; i++) {
+              const file = uploadResult.files[i];
+              
+              console.log('💾 Resim kaydediliyor:', {
+                product_id: productId,
+                variant_id: variantId,
+                url: file.url,
+                path: file.path,
+                is_primary: i === 0,
+                sort_order: i,
+              });
+              
+              const { data: insertedImage, error: imageError } = await supabase
+                .from('product_images')
+                .insert({
+                  product_id: productId,
+                  variant_id: variantId,
+                  url: file.url,
+                  is_primary: i === 0, // İlk resim primary
+                  sort_order: i,
+                })
+                .select();
+
+              if (imageError) {
+                console.error('❌ Resim kaydedilemedi:', imageError);
+                console.error('Hata detayı:', JSON.stringify(imageError, null, 2));
+              } else {
+                console.log('✅ Resim kaydedildi:', insertedImage);
+              }
+            }
+            
+            console.log('✅ Tüm resimler veritabanına kaydedildi!');
+          }
+        } catch (uploadError) {
+          console.error('❌ Resim yükleme hatası:', uploadError);
+          // Resim hatası ürün kaydını engellemesin
+        }
+      }
       
       setSubmitSuccess(true);
       
@@ -631,7 +700,7 @@ export default function AddProductForm() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                 </svg>
               </div>
-              <span>2.2. ÜRÜN STOK BİLGİSİ</span>
+              <span>2.2. ÜRÜN ÖZELLİKLERİ</span>
               <span className="text-sm font-normal text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full">
                 {trendyolCategoryData?.trendyolCategoryName 
                   ? `📱 ${trendyolCategoryData.trendyolCategoryName} Özellikleri`
