@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resim Yükleme Testi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            width: 100%;
+        }
+        button {
+            background: #4F46E5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #4338CA;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #D1FAE5;
+            border: 1px solid #10B981;
+            color: #065F46;
+        }
+        .error {
+            background: #FEE2E2;
+            border: 1px solid #EF4444;
+            color: #991B1B;
+        }
+        img {
+            max-width: 100%;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🖼️ Resim Yükleme Testi</h2>
+        
+        <div>
+            <label for="fileInput">Resim Seç:</label>
+            <input type="file" id="fileInput" accept="image/*" />
+        </div>
+
+        <button id="uploadBtn" onclick="uploadImage()">Yükle</button>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function uploadImage() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('result');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Lütfen bir resim seçin!');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            // Check file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Dosya boyutu 5MB\'dan küçük olmalı!');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Yükleniyor...';
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/v1/upload/image', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Başarılı!</strong><br>
+                        <strong>URL:</strong> ${data.url}<br>
+                        <strong>Dosya:</strong> ${data.fileName}<br>
+                        <strong>Boyut:</strong> ${(data.fileSize / 1024).toFixed(2)} KB<br>
+                        <strong>Tip:</strong> ${data.fileType}<br>
+                        <img src="${data.url}" alt="Yüklenen resim">
+                    `;
+                    resultDiv.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'Yükleme başarısız');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<strong>❌ Hata:</strong> ${error.message}`;
+                resultDiv.style.display = 'block';
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Yükle';
+            }
+        }
+    </script>
+</body>
+</html>
