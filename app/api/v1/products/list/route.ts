@@ -18,7 +18,7 @@ export async function GET() {
         category:categories(id, name, slug),
         variants:product_variants(
           id,
-          sku,
+          master_sku,
           barcode,
           cost_price,
           stock_quantity,
@@ -26,7 +26,6 @@ export async function GET() {
           images:product_images(
             id,
             url,
-            alt_text,
             is_primary,
             sort_order
           )
@@ -61,10 +60,11 @@ export async function GET() {
         // Category info
         category: (product.category as any)?.name || 'Kategori Yok',
         category_slug: (product.category as any)?.slug || '',
+        category_id: (product.category as any)?.id || null,
         
         // Variant info (first variant)
         variant_id: primaryVariant?.id || null,
-        sku: primaryVariant?.sku || product.master_sku,
+        sku: primaryVariant?.master_sku || product.master_sku,
         barcode: primaryVariant?.barcode || '',
         price: primaryVariant?.cost_price || product.base_cost_price || 0,
         stock: primaryVariant?.stock_quantity || 0,
@@ -72,7 +72,7 @@ export async function GET() {
         
         // Image info
         image_url: primaryImage?.url || null,
-        image_alt: primaryImage?.alt_text || product.title,
+        image_alt: product.title,
         
         // Totals
         total_variants: product.variants?.length || 0,
