@@ -188,7 +188,7 @@ export default function AddProductForm() {
 
           if (uploadResult.success && uploadResult.files && uploadResult.files.length > 0) {
             console.log('✅ Resimler yüklendi:', uploadResult.files);
-            
+            // Resimleri product_images tablosuna kaydet
             // Resimleri product_images tablosuna kaydet
             const productId = result.data.product.id;
             const variantId = result.data.variants?.[0]?.id; // İlk varyant
