@@ -5,22 +5,21 @@
 
 export const TRENDYOL_CONFIG = {
   // API Base URL - TRENDYOL TEST SUNUCUSU
-  // Test: https://sandbox-api.trendyol.com/sapigw (veya başka test URL)
+  // Test/Stage: https://stageapigw.trendyol.com/sapigw
   // Production: https://api.trendyol.com/sapigw
-  BASE_URL: 'https://api.trendyol.com/sapigw', // Eğer test URL farklıysa buraya yazın
+  BASE_URL: 'https://stageapigw.trendyol.com/sapigw', // TEST ORTAMI
   
-  // Satıcı (Supplier) Bilgileri - ASERAI TEST SUNUCUSU
-  SUPPLIER_ID: '2738',
+  // Satıcı (Supplier) Bilgileri - TEST (yeni verilen credentials)
+  SUPPLIER_ID: '944254',
   
-  // Entegrasyon Bilgileri - ASERAI TEST SUNUCUSU (TEST)
-  // Trendyol tarafından sağlanan test sunucusu credentials
-  INTEGRATION_REFERENCE: 'f23ce6f0-1eed-4477-87fb-78dcf972021a',
-  API_KEY: 'CfcS3iAgDihGSTI574IU',
-  API_SECRET: 'kgRhcFMhLdvSGbn4nCe5',
+  // Entegrasyon Bilgileri - Test hesabı (kullanıcı tarafından verildi)
+  INTEGRATION_REFERENCE: '36f07439-e79d-46a5-8f90-34dd1f00806c',
+  API_KEY: 'D4MHXiH51nAizADyCw5h',
+  API_SECRET: 'AyjDEMoVdMMgYVzS4Xi2',
   
   // Base64 encoded credentials (API_KEY:API_SECRET)
-  // Token: CfcS3iAgDihGSTI574IU:kgRhcFMhLdvSGbn4nCe5
-  AUTH_TOKEN: 'Q2ZjUzNpQWdEaWhHU1RJNTc0SVU6a2dSaGNGTWhMZHZTR2JuNG5DZTU=',
+  // Token: D4MHXiH51nAizADyCw5h:AyjDEMoVdMMgYVzS4Xi2
+  AUTH_TOKEN: 'RDRNSFhpSDUxbkFpekFEeUN3NWg6QXlqREVNb1ZkTU1nWVZ6UzRYaTI=',
   
   // API Endpoints
   ENDPOINTS: {
