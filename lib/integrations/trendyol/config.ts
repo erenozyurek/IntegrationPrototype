@@ -5,12 +5,12 @@
 
 export const TRENDYOL_CONFIG = {
   // API Base URL - TRENDYOL TEST SUNUCUSU
-  // Test/Stage: https://stageapigw.trendyol.com/sapigw
-  // Production: https://api.trendyol.com/sapigw
-  BASE_URL: 'https://stageapigw.trendyol.com/sapigw', // TEST ORTAMI
+  // Test/Stage: https://stageapigw.trendyol.com
+  // Production: https://apigw.trendyol.com
+  BASE_URL: 'https://stageapigw.trendyol.com', // TEST ORTAMI
   
-  // Satıcı (Supplier) Bilgileri - TEST (yeni verilen credentials)
-  SUPPLIER_ID: '944254',
+  // Satıcı (Seller) Bilgileri - TEST (yeni verilen credentials)
+  SELLER_ID: '944254',
   
   // Entegrasyon Bilgileri - Test hesabı (kullanıcı tarafından verildi)
   INTEGRATION_REFERENCE: '36f07439-e79d-46a5-8f90-34dd1f00806c',
@@ -24,24 +24,25 @@ export const TRENDYOL_CONFIG = {
   // API Endpoints
   ENDPOINTS: {
     // Ürün Entegrasyonu
-    CREATE_PRODUCT: '/suppliers/{supplierId}/v2/products',
-    UPDATE_PRODUCT: '/suppliers/{supplierId}/v2/products',
-    GET_PRODUCT: '/suppliers/{supplierId}/products',
-    UPDATE_PRICE_INVENTORY: '/suppliers/{supplierId}/products/price-and-inventory',
+    CREATE_PRODUCT: '/integration/product/sellers/{sellerId}/products',
+    UPDATE_PRODUCT: '/integration/product/sellers/{sellerId}/products',
+    GET_PRODUCT: '/integration/product/sellers/{sellerId}/products',
+    UPDATE_PRICE_INVENTORY: '/integration/inventory/sellers/{sellerId}/products/price-and-inventory',
+    GET_BATCH_REQUEST_RESULT: '/integration/product/sellers/{sellerId}/products/batch-requests/{batchRequestId}',
     
     // Kategori
-    GET_CATEGORIES: '/product-categories',
-    GET_CATEGORY_ATTRIBUTES: '/product-categories/{categoryId}/attributes',
+    GET_CATEGORIES: '/integration/product/product-categories',
+    GET_CATEGORY_ATTRIBUTES: '/integration/product/product-categories/{categoryId}/attributes',
     
     // Brand
-    GET_BRANDS: '/brands',
-    GET_BRAND_BY_NAME: '/brands/by-name',
+    GET_BRANDS: '/integration/product/brands',
+    GET_BRAND_BY_NAME: '/integration/product/brands/by-name',
     
     // Sipariş
-    GET_ORDERS: '/suppliers/{supplierId}/orders',
+    GET_ORDERS: '/integration/order/sellers/{sellerId}/orders',
     
     // Kargo
-    UPDATE_SHIPMENT: '/suppliers/{supplierId}/shipment-providers',
+    UPDATE_SHIPMENT: '/integration/product/sellers/{sellerId}/shipment-providers',
   },
   
   // Request Headers

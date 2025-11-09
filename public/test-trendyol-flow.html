@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trendyol Product Creation Test - Full Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .info-box p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .info-box code {
+            background: #e0e7ff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #5b21b6;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e7ff;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .response {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            overflow-x: auto;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .response pre {
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status.success {
+            background: #10b981;
+            color: white;
+        }
+
+        .status.error {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status.pending {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status.completed {
+            background: #10b981;
+            color: white;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 15px;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .step-content p {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 Trendyol Product Creation Test</h1>
+
+        <!-- Info Card -->
+        <div class="card">
+            <h2>📖 Trendyol Ürün Yükleme Süreci</h2>
+            <div class="info-box">
+                <h3>⚠️ Önemli Bilgiler</h3>
+                <p><strong>1. Asenkron İşlem:</strong> Ürün gönderdiğinizde, Trendyol bir <code>batchRequestId</code> döner ve ürün kuyruğa alınır.</p>
+                <p><strong>2. Batch Kontrolü:</strong> Ürünün durumunu kontrol etmek için batch ID ile sorgulama yapmalısınız.</p>
+                <p><strong>3. Onay Süreci:</strong> Başarılı işlenen ürünler bile Trendyol onayından geçmeli ve dashboard'da görünmesi zaman alabilir.</p>
+                <p><strong>4. Hata Durumları:</strong> Batch sonucunda <code>failureReasons</code> alanından hataları görebilirsiniz.</p>
+            </div>
+
+            <div class="info-box" style="border-left-color: #10b981; background: #f0fdf4;">
+                <h3>✅ İşlem Adımları</h3>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Ürün Gönder</h4>
+                        <p>Test ürünü Trendyol'a gönder ve batchRequestId al</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Batch Durumunu Kontrol Et</h4>
+                        <p>Dönen batchRequestId ile işlem durumunu kontrol et</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Ürünleri Listele</h4>
+                        <p>Onaylanmış ürünleri Trendyol'dan çek</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Create Product -->
+        <div class="card">
+            <h2>1️⃣ Test Ürünü Gönder (Otomatik Özellik Kontrolü)</h2>
+            <div class="info-box" style="border-left-color: #10b981; background: #f0fdf4; margin-bottom: 15px;">
+                <p style="color: #065f46; font-size: 14px;">
+                    ✨ <strong>Yeni Özellik:</strong> Bu endpoint artık kategori özelliklerini otomatik olarak sorgular ve 
+                    tüm zorunlu alanları doldurur. Artık eksik özellik hatası almayacaksınız!
+                </p>
+            </div>
+            <button onclick="createProduct()">📦 Ürün Oluştur ve Gönder (Auto Attributes)</button>
+            <div class="loading" id="loading-create">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #666;">Kategori özellikleri sorgulanıyor ve ürün gönderiliyor...</p>
+            </div>
+            <div class="response" id="response-create" style="display: none;"></div>
+        </div>
+
+        <!-- Step 2: Check Batch Status -->
+        <div class="card">
+            <h2>2️⃣ Batch Durumunu Kontrol Et</h2>
+            <div class="input-group">
+                <label for="batchRequestId">Batch Request ID:</label>
+                <input 
+                    type="text" 
+                    id="batchRequestId" 
+                    placeholder="Yukarıdaki işlemden dönen batch ID'yi girin"
+                >
+            </div>
+            <button onclick="checkBatchStatus()">🔍 Batch Durumunu Kontrol Et</button>
+            <div class="loading" id="loading-batch" style="display: none;">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #666;">Batch durumu kontrol ediliyor...</p>
+            </div>
+            <div class="response" id="response-batch" style="display: none;"></div>
+        </div>
+
+        <!-- Step 3: List Products -->
+        <div class="card">
+            <h2>3️⃣ Ürünleri Listele</h2>
+            <button onclick="getProducts(true)">✅ Onaylanmış Ürünleri Getir</button>
+            <button onclick="getProducts(false)">⏳ Onay Bekleyen Ürünleri Getir</button>
+            <button onclick="getProducts()">📋 Tüm Ürünleri Getir</button>
+            <div class="loading" id="loading-products" style="display: none;">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #666;">Ürünler getiriliyor...</p>
+            </div>
+            <div class="response" id="response-products" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Create Product
+        async function createProduct() {
+            const loadingEl = document.getElementById('loading-create');
+            const responseEl = document.getElementById('response-create');
+            
+            loadingEl.classList.add('active');
+            responseEl.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/v1/trendyol/test-product', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+                
+                loadingEl.classList.remove('active');
+                responseEl.style.display = 'block';
+                responseEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+                // Auto-fill batchRequestId if present
+                if (data.batchRequestId) {
+                    document.getElementById('batchRequestId').value = data.batchRequestId;
+                }
+            } catch (error) {
+                loadingEl.classList.remove('active');
+                responseEl.style.display = 'block';
+                responseEl.innerHTML = `<pre style="color: #ef4444;">Error: ${error.message}</pre>`;
+            }
+        }
+
+        // Check Batch Status
+        async function checkBatchStatus() {
+            const batchRequestId = document.getElementById('batchRequestId').value;
+            
+            if (!batchRequestId) {
+                alert('Lütfen Batch Request ID girin!');
+                return;
+            }
+
+            const loadingEl = document.getElementById('loading-batch');
+            const responseEl = document.getElementById('response-batch');
+            
+            loadingEl.style.display = 'block';
+            responseEl.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/v1/trendyol/batch-status/${batchRequestId}`);
+                const data = await response.json();
+                
+                loadingEl.style.display = 'none';
+                responseEl.style.display = 'block';
+                responseEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                loadingEl.style.display = 'none';
+                responseEl.style.display = 'block';
+                responseEl.innerHTML = `<pre style="color: #ef4444;">Error: ${error.message}</pre>`;
+            }
+        }
+
+        // Get Products
+        async function getProducts(approved) {
+            const loadingEl = document.getElementById('loading-products');
+            const responseEl = document.getElementById('response-products');
+            
+            loadingEl.style.display = 'block';
+            responseEl.style.display = 'none';
+
+            try {
+                let url = '/api/v1/trendyol/products';
+                if (approved !== undefined) {
+                    url += `?approved=${approved}`;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                loadingEl.style.display = 'none';
+                responseEl.style.display = 'block';
+                responseEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                loadingEl.style.display = 'none';
+                responseEl.style.display = 'block';
+                responseEl.innerHTML = `<pre style="color: #ef4444;">Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

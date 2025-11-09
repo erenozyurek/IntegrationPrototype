@@ -7,47 +7,102 @@ import { trendyolClient } from './client';
 import type { TrendyolProductItem, TrendyolProductRequest } from './types';
 
 /**
- * Create a test product on Trendyol
+ * Create a test product on Trendyol with auto-fetched category attributes
+ * This function automatically queries the category to get required attributes
  */
 export async function createTestProduct() {
   try {
     console.log('📦 Test ürün oluşturuluyor...');
+    
+    // Step 1: Fetch all categories to find a valid leaf category
+    console.log('🔍 Mevcut kategoriler sorgulanıyor...');
+    const categoriesResponse = await trendyolClient.getCategories() as any;
+    const categories = categoriesResponse.categories || categoriesResponse;
+    
+    // Find a leaf category (one without subCategories)
+    let leafCategory = null;
+    
+    function findLeafCategory(cats: any[]): any {
+      for (const cat of cats) {
+        if (!cat.subCategories || cat.subCategories.length === 0) {
+          return cat;
+        }
+        if (cat.subCategories && cat.subCategories.length > 0) {
+          const leaf = findLeafCategory(cat.subCategories);
+          if (leaf) return leaf;
+        }
+      }
+      return null;
+    }
+    
+    leafCategory = findLeafCategory(categories);
+    
+    if (!leafCategory) {
+      throw new Error('Geçerli bir leaf kategori bulunamadı');
+    }
+    
+    const categoryId = leafCategory.id;
+    const categoryName = leafCategory.name;
+    
+    console.log(`✅ Seçilen kategori: ${categoryName} (ID: ${categoryId})`);
+    
+    // Step 2: Fetch category attributes
+    console.log(`🔍 Kategori ${categoryId} için zorunlu özellikler alınıyor...`);
+    const categoryResponse = await trendyolClient.getCategoryAttributes(categoryId) as any;
+    const categoryAttributes = categoryResponse.categoryAttributes || [];
+    const requiredAttributes = categoryAttributes.filter((attr: any) => attr.required === true);
+    
+    console.log(`✅ ${requiredAttributes.length} zorunlu özellik bulundu`);
+    
+    // Step 2: Build attributes array with all required fields
+    const attributes: any[] = [];
+    
+    for (const reqAttr of requiredAttributes) {
+      const attrId = reqAttr.attribute.id;
+      const attrName = reqAttr.attribute.name;
+      
+      if (reqAttr.allowCustom) {
+        // Use custom value for attributes that allow it
+        attributes.push({
+          attributeId: attrId,
+          customAttributeValue: 'Test Value',
+        });
+        console.log(`  ✓ ${attrName} (ID: ${attrId}) - Custom value: "Test Value"`);
+      } else if (reqAttr.attributeValues && reqAttr.attributeValues.length > 0) {
+        // Use first available value for predefined attributes
+        const firstValue = reqAttr.attributeValues[0];
+        attributes.push({
+          attributeId: attrId,
+          attributeValueId: firstValue.id,
+        });
+        console.log(`  ✓ ${attrName} (ID: ${attrId}) - Value: "${firstValue.name}" (ID: ${firstValue.id})`);
+      }
+    }
+    
+    console.log(`📋 Toplam ${attributes.length} özellik eklendi`);
 
-    // Test product data
+    // Step 3: Create product with valid attributes
     const testProduct: TrendyolProductItem = {
-      barcode: 'test-barcode-' + Date.now(), // Unique barcode
-      title: 'Test Ürün - Integration Prototype',
-      productMainId: 'TEST-PROD-' + Date.now(), // Your internal product ID
-      brandId: 1791, // Trendyol'da kayıtlı bir brand ID
-      categoryId: 411, // Trendyol kategori ID
-      quantity: 100,
-      stockCode: 'STK-' + Date.now(),
-      dimensionalWeight: 2,
-      description: 'Bu bir test ürünüdür. Integration Prototype tarafından oluşturulmuştur.',
+      barcode: 'auto-test-' + Date.now(), // Unique barcode
+      title: `Test ${categoryName} - Integration Prototype`,
+      productMainId: 'AUTO-TEST-' + Date.now(), // Your internal product ID
+      brandId: 1791, // Test brand ID
+      categoryId: categoryId,
+      quantity: 50,
+      stockCode: 'AUTO-STK-' + Date.now(),
+      dimensionalWeight: 1,
+      description: `Test ürünü: ${categoryName}. Otomatik kategori özellik kontrolü ile oluşturulmuştur.`,
       currencyType: 'TRY',
-      listPrice: 250.99, // Piyasa fiyatı
-      salePrice: 120.99, // Satış fiyatı
-      vatRate: 18, // KDV oranı (%)
+      listPrice: 199.99, // Piyasa fiyatı
+      salePrice: 99.99, // Satış fiyatı
+      vatRate: 20, // KDV oranı (%)
       cargoCompanyId: 10, // Yurtiçi Kargo
-      deliveryOption: {
-        deliveryDuration: 1,
-        fastDeliveryType: 'FAST_DELIVERY'
-      },
       images: [
         {
           url: 'https://cdn.dsmcdn.com/ty1/product/media/images/prod/QC/20240101/12/example.jpg',
         },
       ],
-      attributes: [
-        {
-          attributeId: 338,
-          attributeValueId: 6980
-        },
-        {
-          attributeId: 346,
-          attributeValueId: 4290
-        },
-      ],
+      attributes: attributes, // Auto-generated attributes
     };
 
     const productRequest: TrendyolProductRequest = {
@@ -58,15 +113,57 @@ export async function createTestProduct() {
 
     const response = await trendyolClient.createProduct(productRequest);
 
-    console.log('✅ Test ürün başarıyla oluşturuldu!');
+    console.log('✅ Ürün isteği gönderildi!');
     console.log('📋 Response:', response);
+
+    // Check if we got a batchRequestId
+    if (response && (response as any).batchRequestId) {
+      const batchRequestId = (response as any).batchRequestId;
+      console.log('🔍 Batch Request ID:', batchRequestId);
+      console.log('⏳ Ürün işleme kuyruğuna alındı. Batch durumunu kontrol edebilirsiniz.');
+      
+      return {
+        success: true,
+        data: response,
+        batchRequestId,
+        message: 'Ürün başarıyla gönderildi! Trendyol tarafından işlenmeyi bekliyor. Batch ID: ' + batchRequestId,
+      };
+    }
 
     return {
       success: true,
       data: response,
+      message: 'Ürün başarıyla gönderildi!',
     };
   } catch (error: any) {
     console.error('❌ Test ürün oluşturma hatası:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Check batch request status
+ */
+export async function checkBatchStatus(batchRequestId: string) {
+  try {
+    console.log(`� Batch durumu kontrol ediliyor: ${batchRequestId}`);
+    const response = await trendyolClient.getBatchRequestResult(batchRequestId);
+    console.log('✅ Batch durumu alındı:', JSON.stringify(response, null, 2));
+    
+    const batchData = response as any;
+    return {
+      success: true,
+      data: batchData,
+      status: batchData.status,
+      itemCount: batchData.itemCount,
+      failedItemCount: batchData.failedItemCount,
+      items: batchData.items,
+    };
+  } catch (error: any) {
+    console.error('❌ Batch durumu kontrol hatası:', error);
     return {
       success: false,
       error: error.message,

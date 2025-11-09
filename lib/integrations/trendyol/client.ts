@@ -7,13 +7,13 @@ import { TRENDYOL_CONFIG } from './config';
 
 export class TrendyolApiClient {
   private baseUrl: string;
-  private supplierId: string;
+  private sellerId: string;
   private authToken: string;
   private headers: Record<string, string>;
 
   constructor() {
     this.baseUrl = TRENDYOL_CONFIG.BASE_URL;
-    this.supplierId = TRENDYOL_CONFIG.SUPPLIER_ID;
+    this.sellerId = TRENDYOL_CONFIG.SELLER_ID;
     this.authToken = TRENDYOL_CONFIG.AUTH_TOKEN;
     this.headers = {
       ...TRENDYOL_CONFIG.HEADERS,
@@ -29,8 +29,8 @@ export class TrendyolApiClient {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: any
   ): Promise<T> {
-    // Replace supplierId placeholder in endpoint
-    const url = `${this.baseUrl}${endpoint.replace('{supplierId}', this.supplierId)}`;
+    // Replace sellerId placeholder in endpoint
+    const url = `${this.baseUrl}${endpoint.replace('{sellerId}', this.sellerId)}`;
 
     const options: RequestInit = {
       method,
@@ -146,8 +146,8 @@ export class TrendyolApiClient {
     );
   }
 
-  /**
-   * Get products
+    /**
+   * Get products from Trendyol
    */
   async getProducts(params?: {
     page?: number;
@@ -166,6 +166,18 @@ export class TrendyolApiClient {
     const query = queryParams.toString();
     const endpoint = `${TRENDYOL_CONFIG.ENDPOINTS.GET_PRODUCT}${query ? '?' + query : ''}`;
     
+    return this.makeRequest(endpoint);
+  }
+
+  /**
+   * Get batch request result
+   * Check the status of a product creation/update batch request
+   */
+  async getBatchRequestResult(batchRequestId: string) {
+    const endpoint = TRENDYOL_CONFIG.ENDPOINTS.GET_BATCH_REQUEST_RESULT.replace(
+      '{batchRequestId}',
+      batchRequestId
+    );
     return this.makeRequest(endpoint);
   }
 
