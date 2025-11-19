@@ -1,8 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import EditProductModal from './EditProductModal';
+import EditProductModalEnhanced from './EditProductModalEnhanced';
 import SendToTrendyolModal from './SendToTrendyolModal';
+
+interface TrendyolProductVariant {
+  id: string;
+  barcode: string;
+  stockCode: string;
+  quantity: number;
+  listPrice: number;
+  salePrice: number;
+  variantAttributes: Array<{
+    attributeId: number;
+    attributeValueId: number;
+  }>;
+}
 
 interface TrendyolProduct {
   id: string;
@@ -19,6 +32,11 @@ interface TrendyolProduct {
   vatRate: number;
   images: { url: string }[];
   attributes: unknown[];
+  variants?: TrendyolProductVariant[];
+  trendyol_status?: 'not_sent' | 'pending' | 'approved' | 'failed';
+  batch_request_id?: string | null;
+  failure_reasons?: string[] | null;
+  last_sync_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,10 +57,10 @@ export default function ProductsGrid() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [editingProduct, setEditingProduct] = useState<TrendyolProduct | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedProductForEdit, setSelectedProductForEdit] = useState<TrendyolProduct | null>(null);
   const [sendingProduct, setSendingProduct] = useState<TrendyolProduct | null>(null);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -84,8 +102,7 @@ export default function ProductsGrid() {
   });
 
   const handleEdit = (product: TrendyolProduct) => {
-    setEditingProduct(product);
-    setIsEditModalOpen(true);
+    setSelectedProductForEdit(product);
   };
 
   const handleSaveEdit = (updatedProduct: TrendyolProduct) => {
@@ -107,14 +124,55 @@ export default function ProductsGrid() {
     fetchProducts();
   };
 
+  const handleCheckStatus = async (product: TrendyolProduct) => {
+    setCheckingStatus(product.id);
+    
+    try {
+      const response = await fetch(`/api/v1/trendyol/check-status/${product.id}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Durum kontrolü başarısız');
+      }
+
+      // Show status message
+      alert(
+        `${result.message}\n\n` +
+        (result.failureReasons && result.failureReasons.length > 0
+          ? `Reddedilme Nedenleri:\n${result.failureReasons.join('\n')}`
+          : '')
+      );
+
+      // Refresh products to show updated status
+      fetchProducts();
+    } catch (error) {
+      console.error('Status check error:', error);
+      alert(error instanceof Error ? error.message : 'Durum kontrol edilemedi');
+    } finally {
+      setCheckingStatus(null);
+    }
+  };
+
   const handleDelete = async (productId: string) => {
-    if (!confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
+    const product = products.find((p) => p.id === productId);
+    
+    let confirmMessage = 'Bu ürünü silmek istediğinizden emin misiniz?';
+    if (product?.trendyol_status === 'approved') {
+      confirmMessage += '\n\nNot: Ürün Trendyol\'da onaylı durumda. Veritabanından silinecek ancak Trendyol\'dan satıcı paneli üzerinden manuel olarak silmeniz gerekecek.';
+    }
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/v1/temp-products/update?id=${productId}`, {
+      const response = await fetch('/api/v1/trendyol/delete-product', {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId,
+          deleteFromTrendyol: true, // Will show warning if not possible
+        }),
       });
 
       const result = await response.json();
@@ -122,6 +180,21 @@ export default function ProductsGrid() {
       if (!response.ok) {
         throw new Error(result.error || 'Failed to delete product');
       }
+
+      // Show result message
+      let message = result.message;
+      message += `\n\nSilinen görseller: ${result.imagesDeleted}`;
+      
+      if (result.batchRequestId) {
+        message += `\n\nTrendyol Batch ID: ${result.batchRequestId}`;
+        message += '\nTrendyol\'dan silinme durumunu birkaç dakika sonra kontrol edin.';
+      }
+      
+      if (result.needsManualCheck) {
+        message += '\n\nNot: Silme işlemi başlatıldı ancak tamamlanıp tamamlanmadığını kontrol etmelisiniz.';
+      }
+      
+      alert(message);
 
       // Remove product from list
       setProducts((prev) => prev.filter((p) => p.id !== productId));
@@ -350,34 +423,101 @@ export default function ProductsGrid() {
                     </div>
                   </div>
 
+                  {/* Status Badge */}
+                  {product.trendyol_status && product.trendyol_status !== 'not_sent' && (
+                    <div className="mb-3">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                        product.trendyol_status === 'approved' ? 'bg-green-100 text-green-700' :
+                        product.trendyol_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        product.trendyol_status === 'failed' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {product.trendyol_status === 'approved' && '✓ Onaylandı'}
+                        {product.trendyol_status === 'pending' && '⏳ Beklemede'}
+                        {product.trendyol_status === 'failed' && '✗ Reddedildi'}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="space-y-2">
-                    <button 
-                      onClick={() => handleSendToTrendyol(product)}
-                      className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all font-semibold text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                      Trendyol&apos;a Gönder
-                    </button>
-                    <div className="flex gap-2">
+                    {/* Show Send button only if not sent yet */}
+                    {(!product.trendyol_status || product.trendyol_status === 'not_sent' || product.trendyol_status === 'failed') && (
                       <button 
-                        onClick={() => handleEdit(product)}
-                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg"
-                      >
-                        Düzenle
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(product.id)}
-                        className="px-4 py-2.5 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all font-semibold text-sm"
-                        title="Sil"
+                        onClick={() => handleSendToTrendyol(product)}
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all font-semibold text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
+                        {product.trendyol_status === 'failed' ? 'Tekrar Gönder' : 'Trendyol\'a Gönder'}
                       </button>
-                    </div>
+                    )}
+
+                    {/* Show Status/Update/Delete for sent products */}
+                    {product.trendyol_status && product.trendyol_status !== 'not_sent' && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleCheckStatus(product)}
+                          disabled={checkingStatus === product.id}
+                          className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all font-semibold text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Durumu Kontrol Et"
+                        >
+                          {checkingStatus === product.id ? (
+                            <>
+                              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Kontrol...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Durum
+                            </>
+                          )}
+                        </button>
+                        <button 
+                          onClick={() => handleEdit(product)}
+                          className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg"
+                        >
+                          Güncelle
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(product.id)}
+                          className="px-4 py-2.5 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all font-semibold text-sm"
+                          title="Sil"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Show Edit/Delete for not-sent products */}
+                    {(!product.trendyol_status || product.trendyol_status === 'not_sent') && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleEdit(product)}
+                          className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg"
+                        >
+                          Düzenle
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(product.id)}
+                          className="px-4 py-2.5 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all font-semibold text-sm"
+                          title="Sil"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer Info */}
@@ -392,15 +532,12 @@ export default function ProductsGrid() {
         )}
       </div>
 
-      {/* Edit Modal */}
-      {editingProduct && (
-        <EditProductModal
-          product={editingProduct}
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setEditingProduct(null);
-          }}
+            {/* Edit Modal */}
+      {selectedProductForEdit && (
+        <EditProductModalEnhanced
+          product={selectedProductForEdit}
+          isOpen={!!selectedProductForEdit}
+          onClose={() => setSelectedProductForEdit(null)}
           onSave={handleSaveEdit}
         />
       )}

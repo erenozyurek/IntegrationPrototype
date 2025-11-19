@@ -98,6 +98,18 @@ export default function SendToTrendyolModal({
 
       const batchId = sendResult.batchRequestId;
       setBatchRequestId(batchId);
+      
+      // Update product status to 'pending'
+      await fetch('/api/v1/temp-products/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product.id,
+          status: 'pending',
+          batchRequestId: batchId,
+        }),
+      });
+      
       setIsSending(false);
 
       // Step 2: Check batch status
@@ -114,13 +126,24 @@ export default function SendToTrendyolModal({
       setStep('result');
 
       if (checkResult.status === 'PROCESSING') {
-        // Still processing, show message
+        // Still processing, keep status as pending
         setResult({
           success: false,
           message: 'Ürün hala işleniyor. Lütfen birkaç dakika sonra kontrol edin.',
           errors: `Batch ID: ${batchId}`,
         });
       } else if (checkResult.success) {
+        // Update status to approved
+        await fetch('/api/v1/temp-products/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: product.id,
+            status: 'approved',
+            batchRequestId: batchId,
+          }),
+        });
+        
         setResult({
           success: true,
           message: checkResult.message,
@@ -130,6 +153,18 @@ export default function SendToTrendyolModal({
           onClose();
         }, 3000);
       } else {
+        // Update status to failed with reasons
+        await fetch('/api/v1/temp-products/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: product.id,
+            status: 'failed',
+            batchRequestId: batchId,
+            failureReasons: checkResult.errors ? [checkResult.errors] : [],
+          }),
+        });
+        
         setResult({
           success: false,
           message: checkResult.message,

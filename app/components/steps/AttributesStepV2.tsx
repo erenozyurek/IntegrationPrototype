@@ -234,39 +234,47 @@ export default function AttributesStepV2({
       }
     });
 
-    // Validate variant attributes
-    variantAttributes.forEach(attr => {
-      if (attr.required) {
-        const selectedValues = selectedVariantValues[attr.attribute.id];
-        if (!selectedValues || selectedValues.length === 0) {
-          newErrors[attr.attribute.id] = 'En az bir değer seçmelisiniz';
+    // Validate variant attributes (if variants exist)
+    if (variantAttributes.length > 0) {
+      variantAttributes.forEach(attr => {
+        if (attr.required) {
+          const selectedValues = selectedVariantValues[attr.attribute.id];
+          if (!selectedValues || selectedValues.length === 0) {
+            newErrors[attr.attribute.id] = 'En az bir değer seçmelisiniz';
+          }
+        }
+      });
+
+      // If there are variant attributes, variants must be generated
+      if (variants.length === 0) {
+        alert('Varyant özellikleri seçtiniz. Lütfen "Varyant Kombinasyonlarını Oluştur" butonuna tıklayın.');
+        return false;
+      }
+
+      // Validate each variant
+      for (const variant of variants) {
+        if (!variant.barcode || variant.barcode.trim() === '') {
+          alert('Tüm varyantlar için barkod girilmelidir');
+          return false;
+        }
+        if (variant.quantity < 0) {
+          alert('Stok miktarı negatif olamaz');
+          return false;
+        }
+        if (variant.listPrice <= 0 || variant.salePrice <= 0) {
+          alert('Fiyatlar 0\'dan büyük olmalıdır');
+          return false;
+        }
+        if (variant.salePrice > variant.listPrice) {
+          alert('İndirimli fiyat, liste fiyatından yüksek olamaz');
+          return false;
         }
       }
-    });
-
-    // Validate variants
-    if (variantAttributes.length > 0 && variants.length === 0) {
-      alert('Lütfen varyant oluşturun');
-      return false;
     }
 
-    for (const variant of variants) {
-      if (!variant.barcode || variant.barcode.trim() === '') {
-        alert('Tüm varyantlar için barkod girilmelidir');
-        return false;
-      }
-      if (variant.quantity < 0) {
-        alert('Stok miktarı negatif olamaz');
-        return false;
-      }
-      if (variant.listPrice <= 0 || variant.salePrice <= 0) {
-        alert('Fiyatlar 0\'dan büyük olmalıdır');
-        return false;
-      }
-      if (variant.salePrice > variant.listPrice) {
-        alert('İndirimli fiyat, liste fiyatından yüksek olamaz');
-        return false;
-      }
+    // Show errors if any
+    if (Object.keys(newErrors).length > 0) {
+      alert('Lütfen tüm zorunlu alanları doldurun!');
     }
 
     setErrors(newErrors);
@@ -509,50 +517,97 @@ export default function AttributesStepV2({
 
       {/* Regular Attributes */}
       {regularAttributes.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Genel Özellikler
-          </h3>
-          <div className="space-y-4">
-            {regularAttributes.map(attr => (
-              <div key={attr.attribute.id}>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {attr.attribute.name} {attr.required && <span className="text-red-500">*</span>}
-                </label>
+        <div className="space-y-6">
+          {/* Required Regular Attributes */}
+          {regularAttributes.filter(a => a.required).length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="text-red-500">*</span>
+                Zorunlu Genel Özellikler
+              </h3>
+              <div className="space-y-4">
+                {regularAttributes.filter(a => a.required).map(attr => (
+                  <div key={attr.attribute.id} className={errors[attr.attribute.id] ? 'bg-red-50 p-4 rounded-lg' : ''}>
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
+                      {attr.attribute.name} <span className="text-red-500">*</span>
+                    </label>
 
-                {attr.allowCustom && (!attr.attributeValues || attr.attributeValues.length === 0) ? (
-                  <input
-                    type="text"
-                    value={regularFormValues[attr.attribute.id]?.customValue || ''}
-                    onChange={(e) => handleRegularAttributeChange(attr.attribute.id, { customValue: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition ${
-                      errors[attr.attribute.id] ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder={`${attr.attribute.name} girin`}
-                  />
-                ) : (
-                  <select
-                    value={regularFormValues[attr.attribute.id]?.attributeValueId || ''}
-                    onChange={(e) => handleRegularAttributeChange(attr.attribute.id, { attributeValueId: Number(e.target.value) })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition ${
-                      errors[attr.attribute.id] ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">{attr.required ? 'Seçin...' : 'Seçin (opsiyonel)'}</option>
-                    {attr.attributeValues?.map(val => (
-                      <option key={val.id} value={val.id}>
-                        {val.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                    {attr.allowCustom && (!attr.attributeValues || attr.attributeValues.length === 0) ? (
+                      <input
+                        type="text"
+                        value={regularFormValues[attr.attribute.id]?.customValue || ''}
+                        onChange={(e) => handleRegularAttributeChange(attr.attribute.id, { customValue: e.target.value })}
+                        className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition ${
+                          errors[attr.attribute.id] ? 'border-red-500 bg-white' : 'border-gray-300'
+                        }`}
+                        placeholder={`${attr.attribute.name} girin`}
+                      />
+                    ) : (
+                      <select
+                        value={regularFormValues[attr.attribute.id]?.attributeValueId || ''}
+                        onChange={(e) => handleRegularAttributeChange(attr.attribute.id, { attributeValueId: Number(e.target.value) })}
+                        className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition ${
+                          errors[attr.attribute.id] ? 'border-red-500 bg-white' : 'border-gray-300'
+                        }`}
+                      >
+                        <option value="">Seçin...</option>
+                        {attr.attributeValues?.map(val => (
+                          <option key={val.id} value={val.id}>
+                            {val.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
 
-                {errors[attr.attribute.id] && (
-                  <p className="mt-1 text-sm text-red-600">{errors[attr.attribute.id]}</p>
-                )}
+                    {errors[attr.attribute.id] && (
+                      <p className="mt-2 text-sm text-red-600 font-semibold">{errors[attr.attribute.id]}</p>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Optional Regular Attributes */}
+          {regularAttributes.filter(a => !a.required).length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                İsteğe Bağlı Genel Özellikler
+              </h3>
+              <div className="space-y-4">
+                {regularAttributes.filter(a => !a.required).map(attr => (
+                  <div key={attr.attribute.id}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {attr.attribute.name}
+                    </label>
+
+                    {attr.allowCustom && (!attr.attributeValues || attr.attributeValues.length === 0) ? (
+                      <input
+                        type="text"
+                        value={regularFormValues[attr.attribute.id]?.customValue || ''}
+                        onChange={(e) => handleRegularAttributeChange(attr.attribute.id, { customValue: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                        placeholder={`${attr.attribute.name} girin (opsiyonel)`}
+                      />
+                    ) : (
+                      <select
+                        value={regularFormValues[attr.attribute.id]?.attributeValueId || ''}
+                        onChange={(e) => handleRegularAttributeChange(attr.attribute.id, { attributeValueId: Number(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      >
+                        <option value="">Seçin (opsiyonel)</option>
+                        {attr.attributeValues?.map(val => (
+                          <option key={val.id} value={val.id}>
+                            {val.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

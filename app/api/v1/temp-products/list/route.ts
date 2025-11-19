@@ -35,6 +35,12 @@ export async function GET() {
         vatRate: trendyolProduct.vatRate || 0,
         images: trendyolProduct.images || [],
         attributes: trendyolProduct.attributes || [],
+        variants: trendyolProduct.variants || null,
+        // Trendyol status tracking
+        trendyol_status: item.trendyol_status || 'not_sent',
+        batch_request_id: item.batch_request_id || null,
+        failure_reasons: item.failure_reasons || null,
+        last_sync_at: item.last_sync_at || null,
         created_at: new Date().toISOString(), // Use current date as fallback
         updated_at: new Date().toISOString(),
       };
