@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ProductFormData } from '../NewProductForm';
 
 interface BasicInfoStepProps {
@@ -16,17 +16,22 @@ export default function BasicInfoStep({
   onNext,
 }: BasicInfoStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const skuGeneratedRef = useRef(false);
 
-  // Auto-generate SKU from title
+  // Auto-generate SKU from title (only once)
   useEffect(() => {
-    if (formData.title && !formData.master_sku) {
+    if (formData.title && !formData.master_sku && !skuGeneratedRef.current) {
+      skuGeneratedRef.current = true;
       const sku = 'SKU-' + formData.title
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, '')
         .substring(0, 10) + '-' + Date.now().toString().slice(-6);
-      updateFormData({ master_sku: sku });
+      // Defer the update to next tick to avoid setState during render
+      setTimeout(() => {
+        updateFormData({ master_sku: sku });
+      }, 0);
     }
-  }, [formData.title]);
+  }, [formData.title, formData.master_sku, updateFormData]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};

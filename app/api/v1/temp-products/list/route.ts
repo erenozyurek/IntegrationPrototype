@@ -31,6 +31,7 @@ export async function GET() {
         stock: trendyolProduct.quantity || 0,
         categoryId: trendyolProduct.categoryId || 0,
         brandId: trendyolProduct.brandId || 0,
+        cargoCompanyId: trendyolProduct.cargoCompanyId || 17, // Default to Trendyol Express
         currency: trendyolProduct.currencyType || 'TRY',
         vatRate: trendyolProduct.vatRate || 0,
         images: trendyolProduct.images || [],

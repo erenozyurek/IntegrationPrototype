@@ -26,6 +26,7 @@ interface TrendyolProduct {
   stock: number;
   categoryId: number;
   brandId: number;
+  cargoCompanyId: number;
   currency: string;
   vatRate: number;
   images: { url: string }[];
@@ -81,7 +82,7 @@ export default function SendToTrendyolModal({
             listPrice: product.price,
             salePrice: product.salePrice,
             vatRate: product.vatRate,
-            cargoCompanyId: 10,
+            cargoCompanyId: product.cargoCompanyId || 17, // Use product's cargo or default to Trendyol Express
             images: product.images,
             attributes: product.attributes,
           },

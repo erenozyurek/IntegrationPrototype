@@ -26,6 +26,7 @@ interface TrendyolProduct {
   stock: number;
   categoryId: number;
   brandId: number;
+  cargoCompanyId: number;
   currency: string;
   vatRate: number;
   images: { url: string }[];
@@ -176,7 +177,7 @@ export default function EditProductModalEnhanced({
             listPrice: formData.listPrice,
             salePrice: formData.salePrice,
             vatRate: formData.vatRate,
-            cargoCompanyId: 10,
+            cargoCompanyId: product.cargoCompanyId || 17, // Preserve or default to Trendyol Express
             images: images,
             attributes: product.attributes,
             variants: product.variants || null,
@@ -248,6 +249,7 @@ export default function EditProductModalEnhanced({
         salePrice: formData.salePrice,
         stock: formData.stock,
         images: images,
+        cargoCompanyId: product.cargoCompanyId, // Preserve cargoCompanyId
       };
 
       onSave(updatedProduct);

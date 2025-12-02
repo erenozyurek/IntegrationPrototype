@@ -28,6 +28,7 @@ interface TrendyolProduct {
   stock: number;
   categoryId: number;
   brandId: number;
+  cargoCompanyId: number;
   currency: string;
   vatRate: number;
   images: { url: string }[];

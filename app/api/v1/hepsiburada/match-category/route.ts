@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { matchCategories, type CategoryMatch } from '@/lib/integrations/trendyol/categoryMatcher';
+import { matchHepsiburadaCategories } from '@/lib/integrations/hepsiburada/categoryMatcher';
+import type { HepsiburadaCategoryMatch } from '@/lib/integrations/hepsiburada/types';
 
 // Server-side cache for match results
+// This avoids re-computing matches for the same title/description
 const matchCache = new Map<string, {
-  matches: CategoryMatch[];
+  matches: HepsiburadaCategoryMatch[];
   timestamp: number;
 }>();
 
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
 
     if (!title) {
       return NextResponse.json(
-        { error: 'Product title is required' },
+        { error: 'Ürün başlığı gereklidir' },
         { status: 400 }
       );
     }
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     const cached = matchCache.get(cacheKey);
     
     if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
-      console.log(`📦 [Trendyol Match] Using cached matches`);
+      console.log(`📦 [Hepsiburada Match] Using cached matches`);
       return NextResponse.json({ 
         success: true, 
         matches: cached.matches,
@@ -42,8 +44,8 @@ export async function POST(req: Request) {
     }
 
     // Compute matches
-    console.log(`🔄 [Trendyol Match] Computing matches for: ${title.substring(0, 50)}...`);
-    const matches = await matchCategories(title, description, topN);
+    console.log(`🔄 [Hepsiburada Match] Computing matches for: ${title.substring(0, 50)}...`);
+    const matches = await matchHepsiburadaCategories(title, description, topN);
 
     // Cache results
     matchCache.set(cacheKey, {
@@ -69,9 +71,9 @@ export async function POST(req: Request) {
       cached: false,
     });
   } catch (error: unknown) {
-    console.error('Category matching API error:', error);
+    console.error('Hepsiburada category matching API error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to match categories' },
+      { error: error instanceof Error ? error.message : 'Kategori eşleştirme başarısız' },
       { status: 500 }
     );
   }

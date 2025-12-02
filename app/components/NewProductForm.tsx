@@ -1,14 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import MarketplaceSelectionStep from './steps/MarketplaceSelectionStep';
 import BasicInfoStep from './steps/BasicInfoStep';
-import CategorySelectionStep from './steps/CategorySelectionStep';
+import CategorySelectionStepMulti from './steps/CategorySelectionStepMulti';
+import BrandSelectionStepMulti from './steps/BrandSelectionStepMulti';
 import AttributesStepV2 from './steps/AttributesStepV2';
 import PricingInventoryStep from './steps/PricingInventoryStep';
 import ImagesStep from './steps/ImagesStep';
 import ReviewStep from './steps/ReviewStep';
+import { useMarketplacePrefetch } from '../hooks/useMarketplacePrefetch';
+
+// Marketplace types
+export type MarketplaceId = 'trendyol' | 'hepsiburada' | 'temu' | 'n11' | 'amazon' | 'ciceksepeti';
 
 export type ProductFormData = {
+  // Marketplace Selection
+  selected_marketplaces: MarketplaceId[];
+  
   // Basic Info
   title: string;
   description: string;
@@ -17,17 +26,50 @@ export type ProductFormData = {
   master_sku: string;
   product_condition: 'new' | 'refurbished' | 'used';
   
-  // Category
+  // Trendyol Category
   category_id: string;
   trendyol_category_id: number | null;
   trendyol_category_name: string;
   trendyol_category_path: string;
   
-  // Attributes
+  // Hepsiburada Category
+  hepsiburada_category_id: number | null;
+  hepsiburada_category_name: string;
+  hepsiburada_category_path: string;
+  
+  // Temu Category
+  temu_category_id: number | null;
+  temu_category_name: string;
+  temu_category_path: string;
+  
+  // Trendyol Brand
+  trendyol_brand_id: number | null;
+  trendyol_brand_name: string;
+  
+  // Hepsiburada Brand
+  hepsiburada_brand_name: string;
+  
+  // Trendyol Attributes
   attributes: Array<{
     attributeId: number;
     attributeValueId?: number;
     customAttributeValue?: string;
+  }>;
+  
+  // Hepsiburada Attributes
+  hepsiburada_attributes: Array<{
+    attributeId: string;
+    attributeName: string;
+    attributeValue: string;
+    attributeValueId?: string;
+  }>;
+  
+  // Temu Attributes
+  temu_attributes: Array<{
+    attrId: string;
+    attrName: string;
+    attrValue: string;
+    attrValueId?: string;
   }>;
   
   // Variants (for products with variant attributes)
@@ -66,17 +108,46 @@ export type ProductFormData = {
 };
 
 const INITIAL_DATA: ProductFormData = {
+  // Marketplace Selection
+  selected_marketplaces: [],
+  
+  // Basic Info
   title: '',
   description: '',
   short_description: '',
   brand_id: '',
   master_sku: '',
   product_condition: 'new',
+  
+  // Trendyol Category
   category_id: '',
   trendyol_category_id: null,
   trendyol_category_name: '',
   trendyol_category_path: '',
+  
+  // Hepsiburada Category
+  hepsiburada_category_id: null,
+  hepsiburada_category_name: '',
+  hepsiburada_category_path: '',
+  
+  // Temu Category
+  temu_category_id: null,
+  temu_category_name: '',
+  temu_category_path: '',
+  
+  // Trendyol Brand
+  trendyol_brand_id: null,
+  trendyol_brand_name: '',
+  
+  // Hepsiburada Brand
+  hepsiburada_brand_name: '',
+  
+  // Attributes
   attributes: [],
+  hepsiburada_attributes: [],
+  temu_attributes: [],
+  
+  // Pricing & Inventory
   price: 0,
   cost_price: 0,
   currency: 'TRY',
@@ -95,42 +166,59 @@ type Step = {
   id: number;
   name: string;
   description: string;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<{
+    formData: ProductFormData;
+    updateFormData: (updates: Partial<ProductFormData>) => void;
+    onNext: () => void;
+    onBack: () => void;
+  }>;
 };
 
 const STEPS: Step[] = [
   {
     id: 1,
+    name: 'Pazaryeri Seçimi',
+    description: 'Hangi pazaryerlerinde satış yapmak istiyorsunuz?',
+    component: MarketplaceSelectionStep,
+  },
+  {
+    id: 2,
     name: 'Temel Bilgiler',
     description: 'Ürün başlığı, açıklama ve marka',
     component: BasicInfoStep,
   },
   {
-    id: 2,
+    id: 3,
     name: 'Kategori Seçimi',
-    description: 'Trendyol kategori eşleştirme',
-    component: CategorySelectionStep,
+    description: 'Pazaryeri kategori eşleştirme',
+    component: CategorySelectionStepMulti,
   },
   {
-    id: 3,
+    id: 4,
+    name: 'Marka & Kargo',
+    description: 'Marka eşleştirme ve kargo firması',
+    component: BrandSelectionStepMulti,
+  },
+  {
+    id: 5,
     name: 'Ürün Özellikleri',
     description: 'Kategoriye özel özellikler ve varyant yönetimi',
     component: AttributesStepV2,
   },
   {
-    id: 4,
+    id: 6,
     name: 'Fiyat & Stok',
     description: 'Fiyatlandırma ve envanter bilgileri',
     component: PricingInventoryStep,
   },
   {
-    id: 5,
+    id: 7,
     name: 'Görseller',
     description: 'Ürün fotoğrafları',
     component: ImagesStep,
   },
   {
-    id: 6,
+    id: 8,
     name: 'Önizleme',
     description: 'Kontrol ve kaydet',
     component: ReviewStep,
@@ -141,6 +229,9 @@ export default function NewProductForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ProductFormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Prefetch marketplace data (categories, etc.) when marketplaces are selected
+  useMarketplacePrefetch(formData.selected_marketplaces);
 
   const updateFormData = (updates: Partial<ProductFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
