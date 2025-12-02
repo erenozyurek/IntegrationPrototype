@@ -26,6 +26,7 @@ export const TRENDYOL_CONFIG = {
     // Ürün Entegrasyonu
     CREATE_PRODUCT: '/integration/product/sellers/{sellerId}/products',
     UPDATE_PRODUCT: '/integration/product/sellers/{sellerId}/products',
+    DELETE_PRODUCT: '/integration/product/sellers/{sellerId}/products',
     GET_PRODUCT: '/integration/product/sellers/{sellerId}/products',
     UPDATE_PRICE_INVENTORY: '/integration/inventory/sellers/{sellerId}/products/price-and-inventory',
     GET_BATCH_REQUEST_RESULT: '/integration/product/sellers/{sellerId}/products/batch-requests/{batchRequestId}',

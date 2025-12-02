@@ -37,7 +37,7 @@ export class TrendyolApiClient {
       headers: this.headers,
     };
 
-    if (body && (method === 'POST' || method === 'PUT')) {
+    if (body && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
       options.body = JSON.stringify(body);
     }
 
@@ -143,6 +143,18 @@ export class TrendyolApiClient {
       TRENDYOL_CONFIG.ENDPOINTS.UPDATE_PRICE_INVENTORY,
       'POST',
       { items }
+    );
+  }
+
+  /**
+   * Delete products from Trendyol
+   * Can delete multiple products by providing array of barcodes
+   */
+  async deleteProducts(barcodes: string[]) {
+    return this.makeRequest(
+      TRENDYOL_CONFIG.ENDPOINTS.DELETE_PRODUCT,
+      'DELETE',
+      { items: barcodes.map(barcode => ({ barcode })) }
     );
   }
 
