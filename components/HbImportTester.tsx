@@ -7,25 +7,24 @@ const DEFAULT_JSON = `[
     "categoryId": 18021982,
     "merchant": "3f95e71f-c39e-4266-9eb4-c154807e87f7",
     "attributes": {
-      "merchantSku": "SAMPLE-SKU-INT-0",
-      "VaryantGroupID": "Hepsiburada0",
-      "Barcode": "1234567891234",
-      "UrunAdi": "Roth Tyler",
-      "UrunAciklamasi": "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id aliquip. Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt.",
+      "merchantSku": "NIKE-AF1-UNIQUE-001",
+      "VaryantGroupID": "NikeAF1Serisi",
+      "Barcode": "1942769999001",
+      "UrunAdi": "Nike Air Force 1 '07 Erkek Spor Ayakkabı",
+      "UrunAciklamasi": "Nike Air Force 1 '07, klasik basketbol stilini modern detaylarla yeniliyor. Rahat ve şık tasarım ile günlük kullanım için idealdir.",
       "Marka": "Nike",
       "GarantiSuresi": 24,
       "kg": "1",
-      "tax_vat_rate": "5",
-      "price": "130,50",
-      "stock": "13",
+      "tax_vat_rate": "18",
+      "price": "3499,90",
+      "stock": "50",
       "Image1": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
       "Image2": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
       "Image3": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
       "Image4": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
       "Image5": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
       "Video1": "https://images.hepsiburada.net/assets/videos/ProductVideos/iphone11.mp4",
-      "renk_variant_property": "Siyah",
-      "ebatlar_variant_property": "Büyük Ebat"
+      "00000MU": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg"
     }
   }
 ]`;
@@ -51,6 +50,18 @@ interface TrackingResponse {
   timestamp: string;
 }
 
+interface CategoryAttributesResponse {
+  success: boolean;
+  message: string;
+  categoryId?: string;
+  summary?: any;
+  mandatoryAttributes?: any[];
+  fieldMappings?: Record<string, any>;
+  data?: any;
+  errors?: string[];
+  timestamp: string;
+}
+
 export default function HbImportTester() {
   const [jsonInput, setJsonInput] = useState(DEFAULT_JSON);
   const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -58,6 +69,9 @@ export default function HbImportTester() {
   const [trackingId, setTrackingId] = useState('');
   const [trackingResponse, setTrackingResponse] = useState<TrackingResponse | null>(null);
   const [isTrackingLoading, setIsTrackingLoading] = useState(false);
+  const [categoryId, setCategoryId] = useState('18021982');
+  const [categoryAttributesResponse, setCategoryAttributesResponse] = useState<CategoryAttributesResponse | null>(null);
+  const [isCategoryLoading, setIsCategoryLoading] = useState(false);
 
   const handleSend = async () => {
     setIsLoading(true);
@@ -147,6 +161,39 @@ export default function HbImportTester() {
     }
   };
 
+  const handleCheckCategoryAttributes = async () => {
+    if (!categoryId.trim()) {
+      setCategoryAttributesResponse({
+        success: false,
+        message: '❌ Category ID boş olamaz',
+        errors: ['Lütfen geçerli bir category ID girin'],
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    setIsCategoryLoading(true);
+    setCategoryAttributesResponse(null);
+
+    try {
+      const apiResponse = await fetch(`/api/hb-category-attributes/${categoryId}`, {
+        method: 'GET',
+      });
+
+      const data: CategoryAttributesResponse = await apiResponse.json();
+      setCategoryAttributesResponse(data);
+    } catch (error) {
+      setCategoryAttributesResponse({
+        success: false,
+        message: '❌ İstek gönderilirken hata oluştu',
+        errors: [error instanceof Error ? error.message : 'Bilinmeyen hata'],
+        timestamp: new Date().toISOString(),
+      });
+    } finally {
+      setIsCategoryLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 p-8">
       <div className="max-w-7xl mx-auto">
@@ -162,7 +209,7 @@ export default function HbImportTester() {
             📍 API Endpoint: <code className="bg-orange-200 px-2 py-1 rounded">mpop-sit.hepsiburada.com/product/api/products/import?version=1</code>
           </p>
           <p className="text-xs text-orange-500 mt-1">
-            ⚙️ Format: <strong>multipart/form-data</strong> (JSON dosyası olarak yüklenir: integrator.json)
+            ⚙️ Format: <strong>multipart/form-data</strong> (JSON dosyası - file param - form-data paketi ile)
           </p>
         </div>
 
@@ -483,6 +530,161 @@ export default function HbImportTester() {
           )}
         </div>
 
+        {/* Category Attributes Section */}
+        <div className="mt-8 bg-white border-2 border-purple-300 rounded-xl p-6 shadow-xl">
+          <h3 className="font-bold text-purple-900 mb-3 text-xl flex items-center gap-2">
+            🏷️ Kategori Attributes Sorgulama
+          </h3>
+          <p className="text-sm text-purple-700 mb-4">
+            Bir kategoriye ait zorunlu alanları ve field ID'lerini (fields.00000MU gibi) öğrenin. 
+            Bu bilgi ürün yüklerken hangi alanların doldurulması gerektiğini gösterir.
+          </p>
+          
+          <div className="flex gap-4 mb-4">
+            <input
+              type="text"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              placeholder="Category ID (örn: 18021982)"
+              className="flex-1 px-4 py-3 border-2 border-purple-300 rounded-lg focus:ring-4 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm"
+            />
+            <button
+              onClick={handleCheckCategoryAttributes}
+              disabled={isCategoryLoading || !categoryId.trim()}
+              className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-bold py-3 px-8 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl whitespace-nowrap"
+            >
+              {isCategoryLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Sorgulanıyor...
+                </>
+              ) : (
+                <>
+                  🔍 Attributes Getir
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Category Attributes Response */}
+          {categoryAttributesResponse && (
+            <div className="mt-4 space-y-4">
+              {/* Status Message */}
+              <div className={`p-4 rounded-lg border-2 ${
+                categoryAttributesResponse.success 
+                  ? 'bg-green-50 border-green-300' 
+                  : 'bg-red-50 border-red-300'
+              }`}>
+                <p className={`font-bold text-lg ${
+                  categoryAttributesResponse.success ? 'text-green-800' : 'text-red-800'
+                }`}>
+                  {categoryAttributesResponse.message}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  🕐 {new Date(categoryAttributesResponse.timestamp).toLocaleString('tr-TR')}
+                </p>
+              </div>
+
+              {/* Summary */}
+              {categoryAttributesResponse.summary && (
+                <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                  <h4 className="font-bold text-purple-800 mb-3">📊 Özet Bilgiler:</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="bg-white p-3 rounded border border-purple-200">
+                      <p className="text-gray-600 text-xs">Toplam Alan</p>
+                      <p className="text-2xl font-bold text-purple-900">{categoryAttributesResponse.summary.totalAttributes}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded border border-purple-200">
+                      <p className="text-gray-600 text-xs">Zorunlu Alan</p>
+                      <p className="text-2xl font-bold text-red-600">{categoryAttributesResponse.summary.mandatoryCount}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded border border-purple-200">
+                      <p className="text-gray-600 text-xs">Opsiyonel Alan</p>
+                      <p className="text-2xl font-bold text-green-600">{categoryAttributesResponse.summary.optionalCount}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded border border-purple-200">
+                      <p className="text-gray-600 text-xs">Enum Alan</p>
+                      <p className="text-2xl font-bold text-blue-600">{categoryAttributesResponse.summary.enumCount}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Mandatory Attributes */}
+              {categoryAttributesResponse.mandatoryAttributes && categoryAttributesResponse.mandatoryAttributes.length > 0 && (
+                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                  <h4 className="font-bold text-red-800 mb-3">⚠️ ZORUNLU ALANLAR ({categoryAttributesResponse.mandatoryAttributes.length}):</h4>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {categoryAttributesResponse.mandatoryAttributes.map((attr: any, index: number) => (
+                      <div key={index} className="bg-white p-3 rounded border-l-4 border-red-500">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-bold text-red-900">{attr.name}</p>
+                            <p className="text-xs font-mono text-gray-600 mt-1">ID: {attr.id}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              attr.type === 'Enum' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {attr.type}
+                            </span>
+                            {attr.multiValue && (
+                              <span className="text-xs ml-1 px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                                Multi
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Field Mappings */}
+              {categoryAttributesResponse.fieldMappings && Object.keys(categoryAttributesResponse.fieldMappings).length > 0 && (
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                  <h4 className="font-bold text-blue-800 mb-3">🗺️ Alan Mapping (JSON İçin):</h4>
+                  <div className="bg-gray-900 text-green-400 p-4 rounded font-mono text-xs max-h-96 overflow-y-auto">
+                    <pre>{JSON.stringify(categoryAttributesResponse.fieldMappings, null, 2)}</pre>
+                  </div>
+                </div>
+              )}
+
+              {/* Errors */}
+              {categoryAttributesResponse.errors && categoryAttributesResponse.errors.length > 0 && (
+                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                  <h4 className="font-bold text-red-800 mb-3">❌ Hatalar:</h4>
+                  <ul className="space-y-2">
+                    {categoryAttributesResponse.errors.map((error, index) => (
+                      <li key={index} className="text-sm text-red-700 bg-red-100 p-2 rounded border-l-4 border-red-500">
+                        {error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Full Data */}
+              {categoryAttributesResponse.data && (
+                <details className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4">
+                  <summary className="font-bold text-gray-800 cursor-pointer hover:text-gray-600">
+                    📄 Tam API Yanıtı (Tıklayın)
+                  </summary>
+                  <div className="mt-3 max-h-96 overflow-y-auto">
+                    <pre className="text-xs font-mono bg-gray-900 text-green-400 p-4 rounded overflow-x-auto whitespace-pre-wrap">
+                      {JSON.stringify(categoryAttributesResponse.data, null, 2)}
+                    </pre>
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Info Section */}
         <div className="mt-8 bg-white border-2 border-orange-300 rounded-xl p-6 shadow-xl">
           <h3 className="font-bold text-orange-900 mb-3 text-xl">ℹ️ Önemli Bilgiler</h3>
@@ -495,7 +697,9 @@ export default function HbImportTester() {
                 <li><strong>API:</strong> Product Import (Test Ortamı)</li>
                 <li><strong>User-Agent:</strong> aserai_dev</li>
                 <li><strong>Format:</strong> multipart/form-data</li>
+                <li><strong>File Param:</strong> "file" (ZORUNLU)</li>
                 <li><strong>File Name:</strong> integrator.json</li>
+                <li><strong>Content-Type:</strong> application/json; charset=utf-8</li>
               </ul>
             </div>
             <div>
