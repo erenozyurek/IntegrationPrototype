@@ -12,14 +12,22 @@ export const HEPSIBURADA_CONFIG = {
   // Test/Stage: https://mpop-sit.hepsiburada.com
   BASE_URL: 'https://mpop-sit.hepsiburada.com', // TEST ORTAMI for product operations
   
+  // Listing API Base URL (External Listing API)
+  LISTING_BASE_URL: 'https://listing-external.hepsiburada.com',
+  
   // Production URL for categories/attributes (test environment has incomplete data)
   PRODUCTION_URL: 'https://mpop.hepsiburada.com',
   
-  // Satıcı (Merchant) Bilgileri - TEST
-  // Bu bilgiler kullanıcı tarafından sağlanacak
-  MERCHANT_ID: '3f95e71f-c39e-4266-9eb4-c154807e87f7', // Merchant ID will be provided
-  USERNAME: '3f95e71f-c39e-4266-9eb4-c154807e87f7', // API Username (often same as merchantId)
-  PASSWORD: 'd8rCXfXqWJW2', // API Password
+  // Satıcı (Merchant) Bilgileri - TEST (Hepsiburada Test Ortamı)
+  // Resmi Hepsiburada Test Credentials
+  
+  MERCHANT_ID: '3f95e71f-c39e-4266-9eb4-c154807e87f7', // Merchant ID (Satıcı ID)
+  
+  // API Credentials (Basic Auth için)
+  // DENEYİM: Listing API için farklı format test ediliyor
+  // Basic Authentication: Username (Servis Anahtarı) : Password (Merchant ID)
+  USERNAME: 'Gjw8mjWb275W', // Servis Anahtarı (Username olarak deneniyor)
+  PASSWORD: '3f95e71f-c39e-4266-9eb4-c154807e87f7', // Merchant ID (Password olarak deneniyor)
   
   // Base64 encoded credentials (username:password)
   AUTH_TOKEN: '', // Will be generated from above credentials
@@ -41,6 +49,9 @@ export const HEPSIBURADA_CONFIG = {
     CREATE_LISTING: '/listing/api/listings',
     UPDATE_LISTING: '/listing/api/listings',
     GET_LISTING_STATUS: '/listing/api/listings/status',
+    
+    // External Listing API (uses LISTING_BASE_URL)
+    EXTERNAL_LISTING: '/listings/merchantid/{merchantId}',
     
     // Stok ve Fiyat
     UPDATE_INVENTORY: '/listing/api/listings/stock-update',
@@ -64,7 +75,9 @@ export const HEPSIBURADA_CONFIG = {
 
 /**
  * Generate Base64 auth token for Hepsiburada
- * Format: username:password (NOT merchantId:username:password)
+ * Format for different APIs:
+ * - Standard: username:password
+ * - Listing API: merchantId:username:password (3 part format)
  */
 export function generateHepsiburadaAuthToken(
   username: string,
@@ -76,6 +89,22 @@ export function generateHepsiburadaAuthToken(
     return Buffer.from(credentials).toString('base64');
   }
   // Fallback for browser
+  return btoa(credentials);
+}
+
+/**
+ * Generate auth token with merchant ID (for Listing API)
+ * Format: merchantId:username:password
+ */
+export function generateHepsiburadaListingAuthToken(
+  merchantId: string,
+  username: string,
+  password: string
+): string {
+  const credentials = `${merchantId}:${username}:${password}`;
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(credentials).toString('base64');
+  }
   return btoa(credentials);
 }
 

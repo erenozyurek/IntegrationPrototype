@@ -204,3 +204,49 @@ export interface HepsiburadaCargoCompany {
   name: string;
   displayName: string;
 }
+
+/**
+ * Hepsiburada Listing API Types (for API Tester)
+ */
+export interface HepsiburadaListingProductAttributes {
+  merchantSku: string;
+  VaryantGroupID: string;
+  Barcode: string;
+  UrunAdi: string;
+  UrunAciklamasi: string;
+  Marka: string;
+  GarantiSuresi: number;
+  kg: string;
+  tax_vat_rate: string;
+  price: string;
+  stock: string;
+  Image1: string;
+  Image2?: string;
+  Image3?: string;
+  Image4?: string;
+  Image5?: string;
+  Video1?: string;
+  renk_variant_property?: string;
+  ebatlar_variant_property?: string;
+  [key: string]: string | number | undefined; // For dynamic attributes
+}
+
+export interface HepsiburadaListingProduct {
+  categoryId: number;
+  merchant: string;
+  attributes: HepsiburadaListingProductAttributes;
+}
+
+export interface HepsiburadaListingTestRequest {
+  products: HepsiburadaListingProduct[];
+  merchantId?: string;
+}
+
+export interface HepsiburadaListingTestResponse {
+  success: boolean;
+  message: string;
+  apiResponse?: any;
+  errors?: string[];
+  timestamp: string;
+  statusCode?: number;
+}
